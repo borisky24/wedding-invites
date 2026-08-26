@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atelier de faire-part — Invitations de mariage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Jost:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1f3a2e;
+    --ink-light:#2e5240;
+    --paper:#fbf7ef;
+    --paper-deep:#f1e9d8;
+    --gold:#b08d57;
+    --gold-soft:#e4d3ac;
+    --rose:#c98a8a;
+    --charcoal:#292722;
+    --line: rgba(31,58,46,.16);
+    --accent: var(--gold);
+    --accent-soft: var(--gold-soft);
+    --shadow: 0 24px 60px -24px rgba(31,58,46,.4);
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--ink);
+    background-image:
+      radial-gradient(ellipse at 20% -10%, rgba(255,255,255,.05), transparent 55%),
+      radial-gradient(ellipse at 100% 110%, rgba(255,255,255,.04), transparent 50%);
+    color: var(--charcoal);
+    font-family:'Jost', sans-serif;
+    min-height:100vh;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
+
+  .app{ max-width:1240px; margin:0 auto; padding: 28px 24px 80px; }
+
+  /* ---------- HEADER ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+    flex-wrap:wrap; padding: 6px 4px 28px;
+    animation: dropIn .6s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes dropIn{ from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:translateY(0);} }
+  .brand{ display:flex; align-items:center; gap:14px; color: var(--paper); }
+  .brand-mark{
+    width:40px; height:40px; border:1px solid var(--accent); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; color:var(--accent);
+    font-size:18px; flex-shrink:0;
+  }
+  .brand-text{ display:flex; flex-direction:column; line-height:1.2; }
+  .brand-eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.16em;
+    text-transform:uppercase; color: var(--accent-soft); margin-bottom:3px;
+  }
+  .brand-title{ font-family:'Cormorant Garamond', serif; font-size:24px; font-weight:600; }
+
+  .tabs{ display:flex; gap:6px; background:rgba(255,255,255,.06); padding:5px; border-radius: 999px; border:1px solid rgba(255,255,255,.1); }
+  .tab{
+    font-family:'Jost', sans-serif; font-size:14px; font-weight:500; letter-spacing:.01em;
+    padding:10px 20px; border-radius:999px; border:none; background:transparent;
+    color: rgba(251,247,239,.65); cursor:pointer; transition: all .25s ease;
+  }
+  .tab:hover{ color: var(--paper); }
+  .tab.active{ background: var(--paper); color: var(--ink); }
+  .tab:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* ---------- VIEWS ---------- */
+  main{ position:relative; }
+  .view{ display:none; animation: fadeUp .5s ease both; }
+  .view.active{ display:block; }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .surface{
+    background: var(--paper);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 36px;
+  }
+
+  /* ---------- ORGANIZER ---------- */
+  .organizer-grid{ display:grid; grid-template-columns: 1.05fr .95fr; gap: 28px; align-items:start; }
+  @media (max-width: 940px){ .organizer-grid{ grid-template-columns: 1fr; } }
+
+  .form-panel h2{ font-family:'Cormorant Garamond', serif; font-size:26px; font-weight:600; margin: 0 0 4px; }
+  .form-panel .lede{ color: rgba(41,39,34,.6); font-size:14px; margin: 0 0 28px; line-height:1.6; }
+
+  fieldset{ border:none; padding:0; margin:0 0 26px; }
+  legend{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color: var(--ink); margin-bottom:14px; padding:0; display:flex; align-items:center; gap:8px;
+  }
+  legend::after{ content:''; flex:1; height:1px; background: var(--line); }
+
+  .field-row{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:14px; }
+  .field-row.single{ grid-template-columns: 1fr; }
+  @media (max-width:560px){ .field-row{ grid-template-columns: 1fr; } }
+
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field label{ font-size:12.5px; color: rgba(41,39,34,.65); font-weight:500; }
+  .field input, .field textarea, .field select{
+    font-family:'Jost', sans-serif; font-size:14.5px; color: var(--charcoal);
+    background: #fff; border:1px solid var(--line); border-radius: var(--radius);
+    padding:11px 13px; width:100%; transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .field textarea{ resize:vertical; min-height:78px; font-family:'Jost',sans-serif; line-height:1.5; }
+  .field input:focus, .field textarea:focus, .field select:focus{
+    outline:none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(176,141,87,.16);
+  }
+
+  .swatches{ display:flex; gap:10px; }
+  .swatch{ position:relative; }
+  .swatch input{ position:absolute; opacity:0; width:1px; height:1px; }
+  .swatch label{
+    display:flex; align-items:center; gap:8px; cursor:pointer; padding:9px 14px;
+    border:1px solid var(--line); border-radius: 999px; font-size:13px; color: var(--charcoal);
+    transition: all .2s ease;
+  }
+  .swatch .dot{ width:14px; height:14px; border-radius:50%; display:inline-block; }
+  .swatch input:checked + label{ border-color: var(--ink); background: var(--paper-deep); font-weight:500; }
+  .swatch input:focus-visible + label{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  button.primary{
+    font-family:'Jost', sans-serif; font-weight:500; font-size:14.5px; letter-spacing:.01em;
+    background: var(--ink); color: var(--paper); border:none; border-radius: var(--radius);
+    padding:13px 26px; cursor:pointer; transition: transform .15s ease, background .2s ease;
+  }
+  button.primary:hover{ background: var(--ink-light); }
+  button.primary:active{ transform: scale(.98); }
+  button.primary:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  button.primary:disabled{ opacity:.5; cursor:not-allowed; }
+
+  button.secondary{
+    font-family:'Jost', sans-serif; font-weight:500; font-size:14.5px; letter-spacing:.01em;
+    background: transparent; color: var(--ink); border:1px solid var(--ink); border-radius: var(--radius);
+    padding:13px 20px; cursor:pointer; transition: all .2s ease;
+  }
+  button.secondary:hover{ background: var(--ink); color: var(--paper); }
+  button.secondary:active{ transform: scale(.98); }
+  button.secondary:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  button.secondary:disabled{ opacity:.5; cursor:not-allowed; }
+
+  .guest-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+  .guest-actions > *{ flex:1; }
+
+  .save-status{ font-size:13px; margin:12px 0 0; min-height:18px; color: rgba(41,39,34,.6); }
+  .save-status.ok{ color: #3b6d11; }
+  .save-status.err{ color: #a32d2d; }
+
+  /* ---------- PREVIEW PANEL ---------- */
+  .preview-panel{ position: sticky; top:24px; }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color: rgba(41,39,34,.55); margin: 0 0 16px;
+  }
+  .card-stage{ display:flex; justify-content:center; padding: 10px 0 26px; }
+  .card-stage.large{ padding: 6px 0 30px; }
+
+  .share-box{
+    border-top:1px solid var(--line); padding-top:18px; margin-top:4px;
+  }
+  .share-box p{ font-size:13px; color: rgba(41,39,34,.65); margin:0 0 10px; }
+  .share-row{ display:flex; gap:8px; }
+  .share-row input{
+    flex:1; font-family:'IBM Plex Mono', monospace; font-size:12.5px; padding:10px 12px;
+    border:1px solid var(--line); border-radius: var(--radius); background: var(--paper-deep); color: var(--charcoal);
+  }
+  .share-row button{
+    font-family:'Jost', sans-serif; font-size:13px; font-weight:500; padding:0 16px; border-radius: var(--radius);
+    border:1px solid var(--ink); background: transparent; color: var(--ink); cursor:pointer; transition: all .2s ease;
+    white-space:nowrap;
+  }
+  .share-row button:hover{ background: var(--ink); color: var(--paper); }
+  .share-note{ font-size:12px; color: rgba(41,39,34,.5); margin-top:10px; line-height:1.5; }
+  .share-warning{
+    font-size:12px; color:#8a5a1c; background:#faeeda; border:1px solid #f0d9ab; border-radius: var(--radius);
+    padding:9px 11px; margin-top:12px; line-height:1.5;
+  }
+
+  /* ---------- INVITATION CARD ---------- */
+  .invite-card{
+    width: 340px; aspect-ratio: 105 / 148;
+    background: var(--paper);
+    background-image: repeating-linear-gradient(0deg, rgba(31,58,46,.015) 0px, transparent 1px, transparent 2px);
+    border: 1px solid var(--accent);
+    box-shadow: 0 1px 0 var(--accent) inset, 0 0 0 5px var(--paper), 0 0 0 6px var(--accent-soft);
+    padding: 30px 26px;
+    position: relative;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    overflow: visible;
+  }
+  .card-number{
+    position:absolute; top:14px; left:18px; font-family:'IBM Plex Mono', monospace;
+    font-size:10px; letter-spacing:.1em; color: rgba(31,58,46,.5);
+  }
+  .card-ornament{ color: var(--accent); font-size:13px; letter-spacing:.5em; margin: 4px 0 14px; }
+  .card-eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+    color: rgba(31,58,46,.55); margin:0 0 10px;
+  }
+  .card-names{
+    font-family:'Cormorant Garamond', serif; font-weight:600; font-size:32px; line-height:1.1;
+    color: var(--ink); margin:0 0 14px;
+  }
+  .card-names .amp{ font-style: italic; color: var(--accent); font-weight:500; padding:0 6px; }
+  .card-message{ font-size:12.5px; line-height:1.65; color: rgba(41,39,34,.75); margin:0 0 16px; padding:0 6px; }
+  .card-divider{ width:36px; height:1px; background: var(--accent); margin: 4px 0 16px; }
+  .card-details{ display:flex; flex-direction:column; gap:9px; margin-bottom:16px; width:100%; }
+  .card-details .detail{ display:flex; flex-direction:column; gap:1px; }
+  .card-details .label{
+    font-family:'IBM Plex Mono', monospace; font-size:9px; letter-spacing:.16em; text-transform:uppercase;
+    color: var(--accent);
+  }
+  .card-details .value{ font-size:13px; color: var(--ink); line-height:1.4; }
+  .card-guest{
+    margin-top:auto; padding-top:14px; border-top:1px dashed var(--line); width:100%;
+    font-size:11.5px; color: rgba(41,39,34,.65); line-height:1.6;
+  }
+  .card-guest strong{ display:block; font-family:'Cormorant Garamond', serif; font-size:17px; color: var(--ink); font-weight:600; margin-top:3px; }
+
+  .seal{
+    position:absolute; right:-14px; bottom:-14px; width:64px; height:64px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, var(--gold-soft), var(--gold) 60%, #8a6c3d 100%);
+    border: 2px solid #8a6c3d; box-shadow: 0 6px 14px rgba(31,58,46,.35);
+    display:flex; align-items:center; justify-content:center; transform: rotate(-8deg);
+    font-family:'Cormorant Garamond', serif; font-weight:700; font-size:19px; color: #3d2f14;
+    letter-spacing:.02em;
+  }
+  .seal.stamping{ animation: stamp .55s cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes stamp{
+    0%{ transform: scale(2.6) rotate(-32deg); opacity:0; }
+    55%{ transform: scale(.92) rotate(-4deg); opacity:1; }
+    75%{ transform: scale(1.06) rotate(-10deg); }
+    100%{ transform: scale(1) rotate(-8deg); }
+  }
+
+  /* ---------- GUEST VIEW ---------- */
+  .guest-wrap{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+  .guest-wrap .surface{ width:100%; max-width:560px; }
+  .empty-state{ padding: 30px 10px; }
+  .empty-state .brand-mark{ color: var(--accent); border-color: var(--accent); margin: 0 auto 18px; }
+  .empty-state h2{ font-family:'Cormorant Garamond', serif; font-size:24px; margin:0 0 8px; color: var(--ink); }
+  .empty-state p{ font-size:14px; color: rgba(41,39,34,.6); line-height:1.6; margin:0; }
+
+  .guest-content h2{ font-family:'Cormorant Garamond', serif; font-size:22px; margin: 0 0 22px; color: var(--ink); }
+  .guest-form{ display:flex; flex-direction:column; gap:12px; max-width:360px; margin: 6px auto 0; }
+  .guest-form label{ font-size:13px; color: rgba(41,39,34,.7); text-align:left; }
+  .guest-form input{
+    font-family:'Jost', sans-serif; font-size:15px; padding:12px 14px; border:1px solid var(--line);
+    border-radius: var(--radius); text-align:left;
+  }
+  .guest-form input:focus{ outline:none; border-color:var(--accent); box-shadow: 0 0 0 3px rgba(176,141,87,.16); }
+  .field-error{ color:#a32d2d; font-size:12.5px; text-align:left; min-height:16px; margin:-6px 0 0; }
+  #downloadBtn{ margin-top:6px; }
+  .hint{ font-size:12.5px; color: rgba(41,39,34,.6); min-height:18px; margin:2px 0 0; }
+  .hint.ok{ color:#3b6d11; }
+  .hint.err{ color:#a32d2d; }
+
+  .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+
+  /* ---------- ACCESS GATE ---------- */
+  .gate{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .gate-card{
+    width:100%; max-width:380px; text-align:center; animation: fadeUp .5s ease both;
+  }
+  .gate-card .brand-mark{ margin:0 auto 18px; color: var(--accent); border-color: var(--accent); }
+  .gate-card h2{ font-family:'Cormorant Garamond', serif; font-size:24px; margin:0 0 8px; color: var(--ink); }
+  .gate-card p.lede{ font-size:13.5px; color: rgba(41,39,34,.6); line-height:1.6; margin:0 0 22px; }
+  .gate-form{ display:flex; flex-direction:column; gap:10px; text-align:left; }
+  .gate-form label{ font-size:12.5px; color: rgba(41,39,34,.65); font-weight:500; }
+  .gate-form input{
+    font-family:'IBM Plex Mono', monospace; font-size:16px; letter-spacing:.06em; padding:12px 14px;
+    border:1px solid var(--line); border-radius: var(--radius); text-align:center;
+  }
+  .gate-form input:focus{ outline:none; border-color:var(--accent); box-shadow: 0 0 0 3px rgba(176,141,87,.16); }
+  .gate-form .field-error{ text-align:center; }
+  .gate-form button.primary{ margin-top:4px; }
+  .gate-switch{ margin-top:16px; font-size:12.5px; color: rgba(41,39,34,.55); }
+  .gate-switch button{
+    background:none; border:none; color: var(--ink); text-decoration:underline; cursor:pointer;
+    font-family:'Jost', sans-serif; font-size:12.5px; padding:0;
+  }
+</style>
+</head>
+<body>
+
+<div id="gateScreen" class="gate" hidden>
+  <div class="surface gate-card">
+    <span class="brand-mark" aria-hidden="true">&#10022;</span>
+    <h2>Espace comité</h2>
+    <p class="lede">Entrez le code d'accès partagé par votre comité d'organisation.</p>
+    <form class="gate-form" id="gateEnterForm" novalidate>
+      <label for="gateEnterCode">Code d'accès</label>
+      <input type="text" id="gateEnterCode" placeholder="Code d'accès" autocomplete="off">
+      <p class="field-error" id="gateEnterError"></p>
+      <button type="submit" class="primary">Accéder à l'espace comité</button>
+    </form>
+    <p class="gate-switch">Vous êtes invité·e ? Utilisez le lien reçu du comité, pas cette page.</p>
+  </div>
+</div>
+
+<div id="appRoot" class="app" hidden>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">&#10022;</span>
+      <div class="brand-text">
+        <span class="brand-eyebrow">Atelier de faire-part</span>
+        <span class="brand-title" id="brandCoupleName">Vos mariés</span>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Navigation principale">
+      <button class="tab active" data-tab="organizer" role="tab" aria-selected="true">Comité d'organisation</button>
+      <button class="tab" data-tab="guest" role="tab" aria-selected="false">Espace invité</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ===================== ORGANIZER VIEW ===================== -->
+    <section id="organizerView" class="view active" role="tabpanel">
+      <div class="organizer-grid">
+
+        <form id="configForm" class="surface form-panel" novalidate>
+          <h2>Informations du mariage</h2>
+          <p class="lede">Ces informations sont encodées directement dans le lien que vous partagez : chaque invité qui l'ouvre voit la carte, sans connexion à un serveur. Si vous modifiez une info, renvoyez le nouveau lien à vos invités.</p>
+
+          <fieldset>
+            <legend>Les mariés</legend>
+            <div class="field-row">
+              <div class="field">
+                <label for="brideFirst">Prénom de la mariée</label>
+                <input type="text" id="brideFirst" placeholder="Aïcha" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="groomFirst">Prénom du marié</label>
+                <input type="text" id="groomFirst" placeholder="Karim" autocomplete="off">
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Date &amp; lieu</legend>
+            <div class="field-row">
+              <div class="field">
+                <label for="weddingDate">Date</label>
+                <input type="date" id="weddingDate">
+              </div>
+              <div class="field">
+                <label for="weddingTime">Heure</label>
+                <input type="time" id="weddingTime">
+              </div>
+            </div>
+            <div class="field-row single">
+              <div class="field">
+                <label for="venueName">Nom du lieu</label>
+                <input type="text" id="venueName" placeholder="Jardins de la Cathédrale" autocomplete="off">
+              </div>
+            </div>
+            <div class="field-row single">
+              <div class="field">
+                <label for="venueAddress">Adresse</label>
+                <input type="text" id="venueAddress" placeholder="Avenue Kwame N'Krumah, Ouagadougou" autocomplete="off">
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Mot d'accueil</legend>
+            <div class="field-row single">
+              <div class="field">
+                <label for="welcomeMessage">Message affiché sur la carte</label>
+                <textarea id="welcomeMessage" placeholder="Vous êtes cordialement invité(e) à célébrer notre union."></textarea>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Teinte du faire-part</legend>
+            <div class="swatches" id="themeSwatches">
+              <div class="swatch">
+                <input type="radio" name="theme" id="themeGold" value="gold" checked>
+                <label for="themeGold"><span class="dot" style="background:#b08d57"></span>Or antique</label>
+              </div>
+              <div class="swatch">
+                <input type="radio" name="theme" id="themeRose" value="rose">
+                <label for="themeRose"><span class="dot" style="background:#c98a8a"></span>Rose poudré</label>
+              </div>
+              <div class="swatch">
+                <input type="radio" name="theme" id="themeGreen" value="green">
+                <label for="themeGreen"><span class="dot" style="background:#4f7d63"></span>Vert sauge</label>
+              </div>
+            </div>
+          </fieldset>
+
+          <button type="submit" class="primary">Mettre à jour l'aperçu et le lien</button>
+          <p class="save-status" id="saveStatus" role="status"></p>
+        </form>
+
+        <aside class="surface preview-panel">
+          <p class="eyebrow">Aperçu en direct</p>
+          <div class="card-stage">
+            <div id="previewCardMount"></div>
+          </div>
+          <div class="share-box">
+            <p>Lien à partager avec vos invités</p>
+            <div class="share-row">
+              <input type="text" id="shareLink" readonly aria-label="Lien à partager">
+              <button type="button" id="copyLinkBtn">Copier</button>
+            </div>
+            <p class="share-note">Ce lien contient toutes les informations du mariage. Chaque invité qui l'ouvre accède uniquement à l'espace invité et télécharge sa propre invitation en PDF.</p>
+            <p class="share-warning">Si vous modifiez une information ci-contre, ce lien change aussi : renvoyez-le à vos invités pour qu'ils aient la version à jour.</p>
+          </div>
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- ===================== GUEST VIEW ===================== -->
+    <section id="guestView" class="view" role="tabpanel">
+      <div class="guest-wrap">
+
+        <div id="guestEmpty" class="surface empty-state" hidden>
+          <span class="brand-mark" aria-hidden="true">&#10022;</span>
+          <h2>Invitation introuvable</h2>
+          <p>Ce lien ne contient pas d'informations de mariage valides. Utilisez le lien exact envoyé par le comité d'organisation, ou signalez le problème à un organisateur.</p>
+        </div>
+
+        <div id="guestContent" class="surface guest-content" hidden>
+          <h2>Votre invitation personnalisée</h2>
+          <div class="card-stage large">
+            <div id="guestCardMount"></div>
+          </div>
+          <div class="guest-form">
+            <div class="field-row">
+              <div class="field">
+                <label for="guestFirstName">Prénom</label>
+                <input type="text" id="guestFirstName" placeholder="Aminata" autocomplete="given-name">
+              </div>
+              <div class="field">
+                <label for="guestLastName">Nom</label>
+                <input type="text" id="guestLastName" placeholder="Sawadogo" autocomplete="family-name">
+              </div>
+            </div>
+            <p class="field-error" id="guestNameError"></p>
+            <div class="guest-actions">
+              <button type="button" class="primary" id="downloadPdfBtn">Télécharger en PDF</button>
+              <button type="button" class="secondary" id="downloadPngBtn">Télécharger en image</button>
+            </div>
+            <p class="hint" id="downloadHint" role="status"></p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+</div>
+<!-- /appRoot -->
+
+<div id="exportRoot" style="position:absolute; left:-9999px; top:0; width:1px; height:1px; overflow:hidden;" aria-hidden="true"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /*
+   * CODE D'ACCES DU COMITE
+   * Changez cette valeur avant de mettre le site en ligne, puis partagez-la
+   * uniquement avec les membres du comité d'organisation. Ce n'est pas un
+   * vrai système de compte sécurisé : cela empêche juste un invité curieux
+   * de tomber par hasard sur le formulaire du comité.
+   */
+  var COMMITTEE_ACCESS_CODE = "MARIAGE2026";
+
+  var DRAFT_KEY = "weddingConfigDraft";
+
+  var THEME_COLORS = {
+    gold:  { accent:"#b08d57", accentSoft:"#e4d3ac" },
+    rose:  { accent:"#c98a8a", accentSoft:"#ecc9c9" },
+    green: { accent:"#4f7d63", accentSoft:"#c8dcce" }
+  };
+
+  var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var state = { config: null };
+
+  // ---------- Utilities ----------
+  function escapeHtml(str){
+    return String(str || "").replace(/[&<>"']/g, function(c){
+      return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[c];
+    });
+  }
+
+  function formatDateFr(isoDate){
+    if(!isoDate) return "Date à venir";
+    var d = new Date(isoDate + "T00:00:00");
+    if(isNaN(d.getTime())) return "Date à venir";
+    return new Intl.DateTimeFormat("fr-FR", { day:"numeric", month:"long", year:"numeric" }).format(d);
+  }
+
+  function formatTimeFr(t){
+    if(!t) return "Heure à confirmer";
+    return t.replace(":", "h");
+  }
+
+  function initials(a, b){
+    var i1 = (a || "").trim().charAt(0).toUpperCase();
+    var i2 = (b || "").trim().charAt(0).toUpperCase();
+    return (i1 || "?") + (i2 || "?");
+  }
+
+  function sanitizeFilename(str){
+    return (str || "invite").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9]+/g,"-").replace(/^-+|-+$/g,"").toLowerCase() || "invite";
+  }
+
+  function makeReference(name){
+    var base = (name || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Z0-9]/g,"").slice(0,3) || "INV";
+    var rand = Math.random().toString(36).slice(2,6).toUpperCase();
+    return base + "-" + rand;
+  }
+
+  // ---------- Config encode/decode (data lives in the URL, no backend) ----------
+  function encodeConfig(cfg){
+    var json = JSON.stringify(cfg);
+    var bytes = new TextEncoder().encode(json);
+    var binary = "";
+    bytes.forEach(function(b){ binary += String.fromCharCode(b); });
+    return btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  }
+
+  function decodeConfig(str){
+    try{
+      var b64 = str.replace(/-/g,"+").replace(/_/g,"/");
+      while(b64.length % 4) b64 += "=";
+      var binary = atob(b64);
+      var bytes = new Uint8Array(binary.length);
+      for(var i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+      var json = new TextDecoder().decode(bytes);
+      var cfg = JSON.parse(json);
+      if(!cfg || typeof cfg !== "object") return null;
+      return cfg;
+    } catch(e){
+      return null;
+    }
+  }
+
+  // ---------- Card template ----------
+  function cardTemplate(opts){
+    var cfg = opts.config || {};
+    var theme = THEME_COLORS[cfg.theme] || THEME_COLORS.gold;
+    var brideFirst = cfg.brideFirst || "Vos Prénoms";
+    var groomFirst = cfg.groomFirst || "Les Mariés";
+    var message = cfg.welcomeMessage || "Vous êtes cordialement invité(e) à célébrer notre union.";
+    var venueName = cfg.venueName || "Lieu à confirmer";
+    var venueAddress = cfg.venueAddress || "";
+    var guestName = opts.guestName;
+    var reference = opts.reference || "APERÇU";
+
+    var guestBlock = guestName
+      ? '<div class="card-guest">Cette invitation est réservée à<strong>' + escapeHtml(guestName) + '</strong></div>'
+      : '<div class="card-guest">Cette invitation est réservée à<strong>' + '\u2014' + '</strong></div>';
+
+    return (
+      '<div class="invite-card" id="' + opts.id + '" style="--accent:' + theme.accent + '; --accent-soft:' + theme.accentSoft + ';">' +
+        '<span class="card-number">R&eacute;f. ' + escapeHtml(reference) + '</span>' +
+        '<span class="card-ornament">&#10070;</span>' +
+        '<p class="card-eyebrow">Ensemble, nous c&eacute;l&eacute;brons</p>' +
+        '<h2 class="card-names">' + escapeHtml(brideFirst) + ' <span class="amp">&amp;</span> ' + escapeHtml(groomFirst) + '</h2>' +
+        '<p class="card-message">' + escapeHtml(message) + '</p>' +
+        '<div class="card-divider"></div>' +
+        '<div class="card-details">' +
+          '<div class="detail"><span class="label">Date</span><span class="value">' + escapeHtml(formatDateFr(cfg.weddingDate)) + '</span></div>' +
+          '<div class="detail"><span class="label">Heure</span><span class="value">' + escapeHtml(formatTimeFr(cfg.weddingTime)) + '</span></div>' +
+          '<div class="detail"><span class="label">Lieu</span><span class="value">' + escapeHtml(venueName) + (venueAddress ? '<br>' + escapeHtml(venueAddress) : '') + '</span></div>' +
+        '</div>' +
+        guestBlock +
+        '<div class="seal' + (opts.sealClass ? ' ' + opts.sealClass : '') + '" id="' + opts.id + '-seal">' + escapeHtml(initials(brideFirst, groomFirst)) + '</div>' +
+      '</div>'
+    );
+  }
+
+  // ---------- Brand + previews ----------
+  function updateBrand(cfg){
+    var b = document.getElementById("brandCoupleName");
+    if(cfg && cfg.brideFirst && cfg.groomFirst){
+      b.textContent = cfg.brideFirst + " & " + cfg.groomFirst;
+    } else {
+      b.textContent = "Vos mariés";
+    }
+  }
+
+  function collectFormConfig(){
+    var themeInput = document.querySelector('input[name="theme"]:checked');
+    return {
+      brideFirst: document.getElementById("brideFirst").value.trim(),
+      groomFirst: document.getElementById("groomFirst").value.trim(),
+      weddingDate: document.getElementById("weddingDate").value,
+      weddingTime: document.getElementById("weddingTime").value,
+      venueName: document.getElementById("venueName").value.trim(),
+      venueAddress: document.getElementById("venueAddress").value.trim(),
+      welcomeMessage: document.getElementById("welcomeMessage").value.trim(),
+      theme: themeInput ? themeInput.value : "gold"
+    };
+  }
+
+  function fillFormFromConfig(cfg){
+    if(!cfg) return;
+    document.getElementById("brideFirst").value = cfg.brideFirst || "";
+    document.getElementById("groomFirst").value = cfg.groomFirst || "";
+    document.getElementById("weddingDate").value = cfg.weddingDate || "";
+    document.getElementById("weddingTime").value = cfg.weddingTime || "";
+    document.getElementById("venueName").value = cfg.venueName || "";
+    document.getElementById("venueAddress").value = cfg.venueAddress || "";
+    document.getElementById("welcomeMessage").value = cfg.welcomeMessage || "";
+    var themeKey = cfg.theme || "gold";
+    var themeInput = document.getElementById("theme" + themeKey.charAt(0).toUpperCase() + themeKey.slice(1));
+    if(themeInput) themeInput.checked = true;
+  }
+
+  function renderOrganizerPreview(){
+    var cfg = collectFormConfig();
+    document.getElementById("previewCardMount").innerHTML = cardTemplate({
+      id: "previewCard", config: cfg, guestName: null, reference: "APERÇU"
+    });
+    updateBrand(cfg);
+  }
+
+  function updateShareLink(cfg){
+    var input = document.getElementById("shareLink");
+    var base = window.location.href.split("#")[0];
+    input.value = base + "#invite=" + encodeConfig(cfg);
+  }
+
+  // ---------- Local draft (this browser only — convenience, not shared with guests) ----------
+  function saveDraft(cfg){
+    try{ window.localStorage.setItem(DRAFT_KEY, JSON.stringify(cfg)); } catch(e){}
+  }
+  function loadDraft(){
+    try{
+      var raw = window.localStorage.getItem(DRAFT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(e){ return null; }
+  }
+
+  // ---------- Tabs ----------
+  function setActiveTab(tabName){
+    document.querySelectorAll(".tab").forEach(function(t){
+      var isActive = t.dataset.tab === tabName;
+      t.classList.toggle("active", isActive);
+      t.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+    document.getElementById("organizerView").classList.toggle("active", tabName === "organizer");
+    document.getElementById("guestView").classList.toggle("active", tabName === "guest");
+  }
+
+  document.querySelectorAll(".tab").forEach(function(tab){
+    tab.addEventListener("click", function(){ setActiveTab(tab.dataset.tab); });
+  });
+
+  // ---------- Organizer form ----------
+  var form = document.getElementById("configForm");
+  var saveStatus = document.getElementById("saveStatus");
+
+  ["brideFirst","groomFirst","weddingDate","weddingTime","venueName","venueAddress","welcomeMessage"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", renderOrganizerPreview);
+  });
+  document.querySelectorAll('input[name="theme"]').forEach(function(r){
+    r.addEventListener("change", renderOrganizerPreview);
+  });
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    var cfg = collectFormConfig();
+    state.config = cfg;
+    saveDraft(cfg);
+    renderOrganizerPreview();
+    updateShareLink(cfg);
+    saveStatus.textContent = "Lien mis à jour. Copiez-le et partagez-le avec vos invités.";
+    saveStatus.className = "save-status ok";
+  });
+
+  // ---------- Guest view ----------
+  var guestEmpty = document.getElementById("guestEmpty");
+  var guestContent = document.getElementById("guestContent");
+  var guestFirstNameInput = document.getElementById("guestFirstName");
+  var guestLastNameInput = document.getElementById("guestLastName");
+  var guestNameError = document.getElementById("guestNameError");
+  var downloadHint = document.getElementById("downloadHint");
+  var downloadPdfBtn = document.getElementById("downloadPdfBtn");
+  var downloadPngBtn = document.getElementById("downloadPngBtn");
+
+  function currentGuestFullName(){
+    var first = guestFirstNameInput.value.trim();
+    var last = guestLastNameInput.value.trim();
+    return (first + " " + last).trim();
+  }
+
+  function renderGuestCard(){
+    document.getElementById("guestCardMount").innerHTML = cardTemplate({
+      id: "guestCard", config: state.config, guestName: currentGuestFullName() || null, reference: "APERÇU"
+    });
+  }
+
+  [guestFirstNameInput, guestLastNameInput].forEach(function(input){
+    input.addEventListener("input", function(){
+      guestNameError.textContent = "";
+      renderGuestCard();
+    });
+  });
+
+  // Renders the final personalized card off-screen and rasterizes it to a canvas.
+  // Shared by both the PDF and the image download paths.
+  async function buildExportCanvas(fullName, reference){
+    var sealEl = document.getElementById("guestCard-seal");
+    if(sealEl && !reducedMotion){
+      sealEl.classList.remove("stamping");
+      void sealEl.offsetWidth;
+      sealEl.classList.add("stamping");
+      await new Promise(function(r){ setTimeout(r, 560); });
+    }
+
+    var exportRoot = document.getElementById("exportRoot");
+    exportRoot.innerHTML = cardTemplate({
+      id: "exportCard", config: state.config, guestName: fullName, reference: reference, sealClass: ""
+    });
+    var exportCard = document.getElementById("exportCard");
+    exportCard.style.width = "630px";
+    exportCard.style.aspectRatio = "";
+    exportCard.style.height = "890px";
+
+    await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
+
+    var canvas = await html2canvas(exportCard, { scale: 2.2, backgroundColor: "#fbf7ef", useCORS: true });
+    exportRoot.innerHTML = "";
+    return canvas;
+  }
+
+  function validateGuestName(){
+    var fullName = currentGuestFullName();
+    guestNameError.textContent = "";
+    if(!fullName){
+      guestNameError.textContent = "Entrez votre prénom et votre nom pour continuer.";
+      guestFirstNameInput.focus();
+      return null;
+    }
+    return fullName;
+  }
+
+  downloadPdfBtn.addEventListener("click", async function(){
+    var fullName = validateGuestName();
+    if(!fullName) return;
+
+    downloadPdfBtn.disabled = true;
+    downloadPngBtn.disabled = true;
+    downloadHint.textContent = "Préparation de votre invitation...";
+    downloadHint.className = "hint";
+
+    try{
+      var reference = makeReference(fullName);
+      var canvas = await buildExportCanvas(fullName, reference);
+      var imgData = canvas.toDataURL("image/png");
+
+      var jsPDF = window.jspdf.jsPDF;
+      var pdf = new jsPDF({ unit: "mm", format: [105, 148] });
+      pdf.addImage(imgData, "PNG", 0, 0, 105, 148, undefined, "FAST");
+      pdf.save("invitation-" + sanitizeFilename(fullName) + ".pdf");
+
+      downloadHint.textContent = "Invitation téléchargée en PDF — réf. " + reference + ".";
+      downloadHint.className = "hint ok";
+    } catch(err){
+      downloadHint.textContent = "Une erreur est survenue. Réessayez.";
+      downloadHint.className = "hint err";
+    } finally{
+      downloadPdfBtn.disabled = false;
+      downloadPngBtn.disabled = false;
+    }
+  });
+
+  downloadPngBtn.addEventListener("click", async function(){
+    var fullName = validateGuestName();
+    if(!fullName) return;
+
+    downloadPdfBtn.disabled = true;
+    downloadPngBtn.disabled = true;
+    downloadHint.textContent = "Préparation de votre invitation...";
+    downloadHint.className = "hint";
+
+    try{
+      var reference = makeReference(fullName);
+      var canvas = await buildExportCanvas(fullName, reference);
+      var link = document.createElement("a");
+      link.download = "invitation-" + sanitizeFilename(fullName) + ".png";
+      link.href = canvas.toDataURL("image/png");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      downloadHint.textContent = "Invitation téléchargée en image — réf. " + reference + ".";
+      downloadHint.className = "hint ok";
+    } catch(err){
+      downloadHint.textContent = "Une erreur est survenue. Réessayez.";
+      downloadHint.className = "hint err";
+    } finally{
+      downloadPdfBtn.disabled = false;
+      downloadPngBtn.disabled = false;
+    }
+  });
+
+  document.getElementById("copyLinkBtn").addEventListener("click", async function(){
+    var input = document.getElementById("shareLink");
+    input.select();
+    try{
+      await navigator.clipboard.writeText(input.value);
+      var btn = document.getElementById("copyLinkBtn");
+      var original = btn.textContent;
+      btn.textContent = "Copié";
+      setTimeout(function(){ btn.textContent = original; }, 1600);
+    } catch(e){ /* clipboard unavailable, selection remains for manual copy */ }
+  });
+
+  // ---------- Access gate (organizer route only) ----------
+  var gateScreen = document.getElementById("gateScreen");
+  var appRoot = document.getElementById("appRoot");
+
+  function unlockOrganizer(){
+    gateScreen.hidden = true;
+    appRoot.hidden = false;
+    setActiveTab("organizer");
+  }
+
+  function enterGuestMode(cfg){
+    state.config = cfg;
+    gateScreen.hidden = true;
+    appRoot.hidden = false;
+    var tabsBar = document.querySelector('.tabs');
+    if(tabsBar) tabsBar.style.display = "none";
+    setActiveTab("guest");
+    if(cfg && cfg.brideFirst && cfg.groomFirst){
+      guestEmpty.hidden = true;
+      guestContent.hidden = false;
+      renderGuestCard();
+    } else {
+      guestEmpty.hidden = false;
+      guestContent.hidden = true;
+    }
+  }
+
+  document.getElementById("gateEnterForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var input = document.getElementById("gateEnterCode");
+    var error = document.getElementById("gateEnterError");
+    error.textContent = "";
+    var attempt = input.value.trim();
+    if(attempt === COMMITTEE_ACCESS_CODE){
+      unlockOrganizer();
+    } else {
+      error.textContent = "Code incorrect. Réessayez.";
+      input.value = "";
+      input.focus();
+    }
+  });
+
+  // ---------- Init ----------
+  function init(){
+    var hash = window.location.hash || "";
+
+    if(hash.indexOf("#invite=") === 0){
+      var cfg = decodeConfig(hash.slice(8));
+      enterGuestMode(cfg);
+      return;
+    }
+
+    var draft = loadDraft();
+    if(draft){
+      state.config = draft;
+      fillFormFromConfig(draft);
+    }
+    renderOrganizerPreview();
+    updateShareLink(state.config || collectFormConfig());
+
+    gateScreen.hidden = false;
+    document.getElementById("gateEnterCode").focus();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
