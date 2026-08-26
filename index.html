@@ -185,22 +185,30 @@
   }
 
   /* ---------- INVITATION CARD ---------- */
-  .invite-card{
+  .invite-card-frame{
     width: 340px; aspect-ratio: 105 / 148;
+    background: var(--accent-soft);
+    padding: 6px;
+    display:flex;
+  }
+  .invite-card{
+    flex: 1 1 auto; width:100%;
     background: var(--paper);
     background-image: repeating-linear-gradient(0deg, rgba(31,58,46,.015) 0px, transparent 1px, transparent 2px);
     border: 1px solid var(--accent);
-    box-shadow: 0 1px 0 var(--accent) inset, 0 0 0 5px var(--paper), 0 0 0 6px var(--accent-soft);
     padding: 30px 26px;
     position: relative;
     display:flex; flex-direction:column; align-items:center; text-align:center;
     overflow: visible;
   }
+  .card-ornament-shape{
+    width:9px; height:9px; background: var(--accent); transform: rotate(45deg);
+    margin: 4px auto 16px;
+  }
   .card-number{
     position:absolute; top:14px; left:18px; font-family:'IBM Plex Mono', monospace;
     font-size:10px; letter-spacing:.1em; color: rgba(31,58,46,.5);
   }
-  .card-ornament{ color: var(--accent); font-size:13px; letter-spacing:.5em; margin: 4px 0 14px; }
   .card-eyebrow{
     font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:.18em; text-transform:uppercase;
     color: rgba(31,58,46,.55); margin:0 0 10px;
@@ -226,19 +234,19 @@
   .card-guest strong{ display:block; font-family:'Cormorant Garamond', serif; font-size:17px; color: var(--ink); font-weight:600; margin-top:3px; }
 
   .seal{
-    position:absolute; right:-14px; bottom:-14px; width:64px; height:64px; border-radius:50%;
+    position:absolute; right:10px; bottom:10px; width:60px; height:60px; border-radius:50%;
     background: radial-gradient(circle at 35% 30%, var(--gold-soft), var(--gold) 60%, #8a6c3d 100%);
     border: 2px solid #8a6c3d; box-shadow: 0 6px 14px rgba(31,58,46,.35);
-    display:flex; align-items:center; justify-content:center; transform: rotate(-8deg);
-    font-family:'Cormorant Garamond', serif; font-weight:700; font-size:19px; color: #3d2f14;
+    display:flex; align-items:center; justify-content:center; transform: rotate(-6deg);
+    font-family:'Cormorant Garamond', serif; font-weight:700; font-size:18px; color: #3d2f14;
     letter-spacing:.02em;
   }
   .seal.stamping{ animation: stamp .55s cubic-bezier(.34,1.56,.64,1) both; }
   @keyframes stamp{
-    0%{ transform: scale(2.6) rotate(-32deg); opacity:0; }
-    55%{ transform: scale(.92) rotate(-4deg); opacity:1; }
-    75%{ transform: scale(1.06) rotate(-10deg); }
-    100%{ transform: scale(1) rotate(-8deg); }
+    0%{ transform: scale(2.6) rotate(-28deg); opacity:0; }
+    55%{ transform: scale(.92) rotate(-2deg); opacity:1; }
+    75%{ transform: scale(1.06) rotate(-8deg); }
+    100%{ transform: scale(1) rotate(-6deg); }
   }
 
   /* ---------- GUEST VIEW ---------- */
@@ -491,6 +499,56 @@
   var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var state = { config: null };
 
+  /*
+   * html2canvas ne peut pas lire les règles @font-face d'une feuille de style
+   * chargée depuis un autre domaine (fonts.googleapis.com) à cause des
+   * restrictions de sécurité du navigateur : il retombe alors sur une police
+   * système, ce qui donne un rendu différent dans le PDF/l'image téléchargés.
+   * On contourne ça en récupérant nous-mêmes le CSS des polices, en
+   * convertissant chaque fichier de police en data URI (même origine), puis
+   * en injectant ce CSS directement dans la page.
+   */
+  var FONT_CSS_URL = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Jost:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap";
+  var fontsEmbedPromise = null;
+
+  function blobToDataUrl(blob){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onloadend = function(){ resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function embedWebFontsForExport(){
+    if(document.getElementById("inlined-export-fonts")) return;
+    try{
+      var cssResp = await fetch(FONT_CSS_URL);
+      var cssText = await cssResp.text();
+      var urlRegex = /url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/g;
+      var urls = [];
+      var m;
+      while((m = urlRegex.exec(cssText)) !== null){
+        if(urls.indexOf(m[1]) === -1) urls.push(m[1]);
+      }
+      var dataUrlByUrl = {};
+      await Promise.all(urls.map(async function(url){
+        var resp = await fetch(url);
+        var blob = await resp.blob();
+        dataUrlByUrl[url] = await blobToDataUrl(blob);
+      }));
+      var inlinedCss = cssText.replace(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/g, function(full, url){
+        return "url(" + (dataUrlByUrl[url] || url) + ")";
+      });
+      var styleEl = document.createElement("style");
+      styleEl.id = "inlined-export-fonts";
+      styleEl.textContent = inlinedCss;
+      document.head.appendChild(styleEl);
+    } catch(e){
+      // Pas de connexion ou police indisponible : l'export se fera avec la police système.
+    }
+  }
+
   // ---------- Utilities ----------
   function escapeHtml(str){
     return String(str || "").replace(/[&<>"']/g, function(c){
@@ -568,9 +626,10 @@
       : '<div class="card-guest">Cette invitation est réservée à<strong>' + '\u2014' + '</strong></div>';
 
     return (
-      '<div class="invite-card" id="' + opts.id + '" style="--accent:' + theme.accent + '; --accent-soft:' + theme.accentSoft + ';">' +
+      '<div class="invite-card-frame" style="--accent:' + theme.accent + '; --accent-soft:' + theme.accentSoft + ';">' +
+      '<div class="invite-card" id="' + opts.id + '">' +
         '<span class="card-number">R&eacute;f. ' + escapeHtml(reference) + '</span>' +
-        '<span class="card-ornament">&#10070;</span>' +
+        '<span class="card-ornament-shape" aria-hidden="true"></span>' +
         '<p class="card-eyebrow">Ensemble, nous c&eacute;l&eacute;brons</p>' +
         '<h2 class="card-names">' + escapeHtml(brideFirst) + ' <span class="amp">&amp;</span> ' + escapeHtml(groomFirst) + '</h2>' +
         '<p class="card-message">' + escapeHtml(message) + '</p>' +
@@ -582,6 +641,7 @@
         '</div>' +
         guestBlock +
         '<div class="seal' + (opts.sealClass ? ' ' + opts.sealClass : '') + '" id="' + opts.id + '-seal">' + escapeHtml(initials(brideFirst, groomFirst)) + '</div>' +
+      '</div>' +
       '</div>'
     );
   }
@@ -726,18 +786,23 @@
       await new Promise(function(r){ setTimeout(r, 560); });
     }
 
+    if(!fontsEmbedPromise) fontsEmbedPromise = embedWebFontsForExport();
+    await fontsEmbedPromise;
+    if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; } catch(e){} }
+
     var exportRoot = document.getElementById("exportRoot");
     exportRoot.innerHTML = cardTemplate({
       id: "exportCard", config: state.config, guestName: fullName, reference: reference, sealClass: ""
     });
-    var exportCard = document.getElementById("exportCard");
-    exportCard.style.width = "630px";
-    exportCard.style.aspectRatio = "";
-    exportCard.style.height = "890px";
+    var exportInner = document.getElementById("exportCard");
+    var exportFrame = exportInner.parentElement;
+    exportFrame.style.width = "630px";
+    exportFrame.style.aspectRatio = "";
+    exportFrame.style.height = "890px";
 
     await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
 
-    var canvas = await html2canvas(exportCard, { scale: 2.2, backgroundColor: "#fbf7ef", useCORS: true });
+    var canvas = await html2canvas(exportFrame, { scale: 2.2, backgroundColor: "#fbf7ef", useCORS: true });
     exportRoot.innerHTML = "";
     return canvas;
   }
@@ -870,6 +935,7 @@
   // ---------- Init ----------
   function init(){
     var hash = window.location.hash || "";
+    fontsEmbedPromise = embedWebFontsForExport();
 
     if(hash.indexOf("#invite=") === 0){
       var cfg = decodeConfig(hash.slice(8));
