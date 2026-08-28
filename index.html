@@ -187,7 +187,7 @@
   /* ---------- INVITATION CARD ---------- */
   .invite-card-frame{
     width: 340px; aspect-ratio: 105 / 148;
-    background: var(--accent-soft);
+    background: #e4d3ac;
     padding: 6px;
     display:flex;
   }
@@ -195,14 +195,14 @@
     flex: 1 1 auto; width:100%;
     background: var(--paper);
     background-image: repeating-linear-gradient(0deg, rgba(31,58,46,.015) 0px, transparent 1px, transparent 2px);
-    border: 1px solid var(--accent);
+    border: 1px solid #b08d57;
     padding: 30px 26px;
     position: relative;
     display:flex; flex-direction:column; align-items:center; text-align:center;
     overflow: visible;
   }
   .card-ornament-shape{
-    width:9px; height:9px; background: var(--accent); transform: rotate(45deg);
+    width:9px; height:9px; background: #b08d57; transform: rotate(45deg);
     margin: 4px auto 16px;
   }
   .card-number{
@@ -217,14 +217,14 @@
     font-family:'Cormorant Garamond', serif; font-weight:600; font-size:32px; line-height:1.1;
     color: var(--ink); margin:0 0 14px;
   }
-  .card-names .amp{ font-style: italic; color: var(--accent); font-weight:500; padding:0 6px; }
+  .card-names .amp{ font-style: italic; color: #b08d57; font-weight:500; padding:0 6px; }
   .card-message{ font-size:12.5px; line-height:1.65; color: rgba(41,39,34,.75); margin:0 0 16px; padding:0 6px; }
-  .card-divider{ width:36px; height:1px; background: var(--accent); margin: 4px 0 16px; }
+  .card-divider{ width:36px; height:1px; background: #b08d57; margin: 4px 0 16px; }
   .card-details{ display:flex; flex-direction:column; gap:9px; margin-bottom:16px; width:100%; }
   .card-details .detail{ display:flex; flex-direction:column; gap:1px; }
   .card-details .label{
     font-family:'IBM Plex Mono', monospace; font-size:9px; letter-spacing:.16em; text-transform:uppercase;
-    color: var(--accent);
+    color: #b08d57;
   }
   .card-details .value{ font-size:13px; color: var(--ink); line-height:1.4; }
   .card-guest{
@@ -625,19 +625,21 @@
       ? '<div class="card-guest">Cette invitation est réservée à<strong>' + escapeHtml(guestName) + '</strong></div>'
       : '<div class="card-guest">Cette invitation est réservée à<strong>' + '\u2014' + '</strong></div>';
 
+    var labelStyle = ' style="color:' + theme.accent + ';"';
+
     return (
-      '<div class="invite-card-frame" style="--accent:' + theme.accent + '; --accent-soft:' + theme.accentSoft + ';">' +
-      '<div class="invite-card" id="' + opts.id + '">' +
+      '<div class="invite-card-frame" style="background:' + theme.accentSoft + ';">' +
+      '<div class="invite-card" id="' + opts.id + '" style="border-color:' + theme.accent + ';">' +
         '<span class="card-number">R&eacute;f. ' + escapeHtml(reference) + '</span>' +
-        '<span class="card-ornament-shape" aria-hidden="true"></span>' +
+        '<span class="card-ornament-shape" aria-hidden="true" style="background:' + theme.accent + ';"></span>' +
         '<p class="card-eyebrow">Ensemble, nous c&eacute;l&eacute;brons</p>' +
-        '<h2 class="card-names">' + escapeHtml(brideFirst) + ' <span class="amp">&amp;</span> ' + escapeHtml(groomFirst) + '</h2>' +
+        '<h2 class="card-names">' + escapeHtml(brideFirst) + ' <span class="amp" style="color:' + theme.accent + ';">&amp;</span> ' + escapeHtml(groomFirst) + '</h2>' +
         '<p class="card-message">' + escapeHtml(message) + '</p>' +
-        '<div class="card-divider"></div>' +
+        '<div class="card-divider" style="background:' + theme.accent + ';"></div>' +
         '<div class="card-details">' +
-          '<div class="detail"><span class="label">Date</span><span class="value">' + escapeHtml(formatDateFr(cfg.weddingDate)) + '</span></div>' +
-          '<div class="detail"><span class="label">Heure</span><span class="value">' + escapeHtml(formatTimeFr(cfg.weddingTime)) + '</span></div>' +
-          '<div class="detail"><span class="label">Lieu</span><span class="value">' + escapeHtml(venueName) + (venueAddress ? '<br>' + escapeHtml(venueAddress) : '') + '</span></div>' +
+          '<div class="detail"><span class="label"' + labelStyle + '>Date</span><span class="value">' + escapeHtml(formatDateFr(cfg.weddingDate)) + '</span></div>' +
+          '<div class="detail"><span class="label"' + labelStyle + '>Heure</span><span class="value">' + escapeHtml(formatTimeFr(cfg.weddingTime)) + '</span></div>' +
+          '<div class="detail"><span class="label"' + labelStyle + '>Lieu</span><span class="value">' + escapeHtml(venueName) + (venueAddress ? '<br>' + escapeHtml(venueAddress) : '') + '</span></div>' +
         '</div>' +
         guestBlock +
         '<div class="seal' + (opts.sealClass ? ' ' + opts.sealClass : '') + '" id="' + opts.id + '-seal">' + escapeHtml(initials(brideFirst, groomFirst)) + '</div>' +
@@ -794,15 +796,16 @@
     exportRoot.innerHTML = cardTemplate({
       id: "exportCard", config: state.config, guestName: fullName, reference: reference, sealClass: ""
     });
+    // Le cadre garde exactement la même taille et les mêmes proportions que
+    // l'aperçu affiché à l'écran (340px, ratio 105/148) : seule la densité
+    // de pixels (scale) augmente, pour une image nette sans changer la
+    // disposition du texte.
     var exportInner = document.getElementById("exportCard");
     var exportFrame = exportInner.parentElement;
-    exportFrame.style.width = "630px";
-    exportFrame.style.aspectRatio = "";
-    exportFrame.style.height = "890px";
 
     await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
 
-    var canvas = await html2canvas(exportFrame, { scale: 2.2, backgroundColor: "#fbf7ef", useCORS: true });
+    var canvas = await html2canvas(exportFrame, { scale: 3.65, backgroundColor: "#fbf7ef", useCORS: true });
     exportRoot.innerHTML = "";
     return canvas;
   }
